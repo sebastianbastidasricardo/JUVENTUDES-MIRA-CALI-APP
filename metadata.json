@@ -1,0 +1,6 @@
+{
+  "name": "Juventudes MIRA Cali - Caracterización",
+  "description": "Plataforma premium de caracterización y registro dinámico para las juventudes de MIRA en Cali. Experiencia móvil optimizada y gestión inteligente de datos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
