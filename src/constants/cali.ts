@@ -83,4 +83,31 @@ export const NEIGHBORHOODS_BY_COMMUNE: Record<string, string[]> = {
 
 export const CALI_NEIGHBORHOODS = Object.values(NEIGHBORHOODS_BY_COMMUNE).flat();
 
+export const TALENTS_CATEGORIES = [
+  {
+    category: "🎤 Arte y Recreación",
+    options: ["Canto", "Danza", "Recreación juvenil"]
+  },
+  {
+    category: "🎥 Producción Audiovisual",
+    options: ["Manejo de Sonido", "Video y camarografía", "Edición audiovisual"]
+  },
+  {
+    category: "🗣️ Formación y Liderazgo",
+    options: ["Charlas y capacitaciones"]
+  },
+  {
+    category: "📦 Logística y Apoyo Operativo",
+    options: ["Apoyo logístico y eventos"]
+  },
+  {
+    category: "⚽ Deporte y Bienestar",
+    options: ["Recreación deportiva"]
+  },
+  {
+    category: "🛡️ Seguridad y Apoyo Social",
+    options: ["Primeros auxilios", "Seguridad en eventos", "Trabajo comunitario"]
+  }
+];
+
 

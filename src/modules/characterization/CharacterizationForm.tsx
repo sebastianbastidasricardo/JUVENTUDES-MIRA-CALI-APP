@@ -30,7 +30,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { calculateAge } from '@/utils/validators';
-import { CALI_COMMUNES, NEIGHBORHOODS_BY_COMMUNE, EDUCATION_LEVELS, GENDERS, INTERESTS, STUDY_AREAS } from '@/constants/cali';
+import { CALI_COMMUNES, NEIGHBORHOODS_BY_COMMUNE, EDUCATION_LEVELS, GENDERS, INTERESTS, STUDY_AREAS, TALENTS_CATEGORIES } from '@/constants/cali';
 import { supabase } from '@/lib/supabase';
 
 // High-fidelity schema
@@ -52,6 +52,7 @@ const formSchema = z.object({
   commune: z.string().min(1, 'Comuna requerida'),
   education_level: z.string().min(1, 'Nivel requerido'),
   study_area: z.array(z.string()).min(1, 'Selecciona al menos un área'),
+  other_study_area: z.string().optional(),
   is_working: z.boolean(),
   profession: z.string().min(2, 'Ingresa tu profesión u ocupación'),
   is_internal: z.boolean().optional(),
@@ -60,7 +61,8 @@ const formSchema = z.object({
   is_in_organization: z.boolean(),
   organization_name: z.string().optional(),
   interests: z.array(z.string()).min(1, 'Elige al menos uno'),
-  talents: z.string().optional(),
+  talents: z.array(z.string()).optional(),
+  other_talent: z.string().optional(),
   open_comments: z.string().optional(),
   data_authorization: z.boolean().refine(val => val === true, 'Debes autorizar el tratamiento de datos'),
 }).superRefine((data, ctx) => {
@@ -90,6 +92,13 @@ const formSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: 'Indica el nombre de la sede',
       path: ['other_church_headquarters']
+    });
+  }
+  if (data.gender === 'Masculino' && (!data.military_status || data.military_status.trim().length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Selecciona una opción',
+      path: ['military_status']
     });
   }
   const doc = data.document_number.replace(/\s/g, '');
@@ -154,12 +163,12 @@ const QUESTION_STEPS = [
   { id: 'location', title: '¿Dónde vives?', fields: ['commune', 'neighborhood'], icon: MapPin },
   { id: 'education', title: 'Tu formación actual', fields: ['education_level'], icon: GraduationCap },
   { id: 'study_area', title: 'Área de estudio', fields: ['study_area'], icon: GraduationCap },
-  { id: 'is_working', title: '¿Estás laborando hoy?', fields: ['is_working'], icon: Briefcase },
+  { id: 'is_working', title: '¿Estás laborando actualmente?', fields: ['is_working'], icon: Briefcase },
   { id: 'profession', title: 'Profesión u ocupación', fields: ['profession'], icon: Briefcase },
   { id: 'is_entrepreneur', title: 'Micronegocio o emprendimiento', fields: ['is_entrepreneur', 'entrepreneur_name'], icon: Sparkles },
   { id: 'is_in_organization', title: '¿Perteneces a alguna organización?', fields: ['is_in_organization', 'organization_name'], icon: User },
   { id: 'interests', title: 'Temas de interés', fields: ['interests'], icon: Heart },
-  { id: 'talents', title: 'Tus talentos', fields: ['talents'], icon: Star },
+  { id: 'talents', title: 'Tus talentos ⭐', fields: ['talents', 'other_talent'] },
   { id: 'comments', title: 'Observaciones', fields: ['open_comments'], icon: MessageSquare },
   { id: 'submitting', title: 'Casi listo...', fields: ['data_authorization'], icon: CheckCircle2 }
 ];
@@ -242,31 +251,33 @@ export default function CharacterizationForm() {
       }
     }
 
+    if (currentStep.id === 'military') {
+      const gender = watch('gender');
+      const militaryStatus = watch('military_status');
+      if (gender === 'Masculino' && (!militaryStatus || militaryStatus.trim().length === 0)) {
+        trigger();
+        const element = document.getElementById('step-container');
+        if (element) {
+          element.classList.add('animate-shake');
+          setTimeout(() => element.classList.remove('animate-shake'), 500);
+        }
+        return;
+      }
+    }
+
     if (currentStep.id === 'id') {
       const docNum = watch('document_number');
       const docType = watch('document_type');
       
       if (!supabase) return;
       
-      // Check for duplicates
-      const { data: existing, error } = await supabase
-        .from('characterization_records')
-        .select('id')
-        .eq('document_number', docNum)
-        .eq('document_type', docType)
-        .maybeSingle();
-
-      if (existing) {
-        toast.error('Este documento ya se encuentra registrado.');
-        return;
-      }
-      if (error && !error.message.includes('multiple rows')) {
-        console.error(error);
-      }
+      // Removed duplicate block check to allow Upsert logic later on submit.
     }
 
-    if (currentStep.id === 'birth' && age > 0) {
-      if (age < 14 || age > 28) {
+    const numAge = typeof age === 'number' ? age : 0;
+
+    if (currentStep.id === 'birth' && numAge > 0) {
+      if (numAge < 14 || numAge > 28) {
         toast.error('Esta caracterización es para jóvenes de 14 a 28 años.');
         return;
       }
@@ -318,27 +329,36 @@ export default function CharacterizationForm() {
         ...formFields,
         // Ensure arrays are handled correctly if empty
         interests: data.interests || [],
+        study_area: (data.study_area || []).map(a => a === 'Otra' && data.other_study_area && data.other_study_area.trim() ? `Otra - ${data.other_study_area.trim()}` : a),
         // Explicitly set nulls for optional text fields if empty strings are passed
         entrepreneur_name: data.is_entrepreneur ? data.entrepreneur_name : null,
         organization_name: data.is_in_organization ? data.organization_name : null,
         church_headquarters: data.registration_source === 'Iglesia' ? (data.church_headquarters === 'OTRO' ? data.other_church_headquarters : data.church_headquarters) : null,
         is_internal: data.registration_source === 'Iglesia',
         military_status: data.gender === 'Masculino' ? data.military_status : null,
-        talents: data.talents || null,
+        talents: (() => {
+          const arr = Array.isArray(data.talents) ? [...data.talents] : [];
+          if (data.other_talent && data.other_talent.trim().length > 0) {
+            arr.push(data.other_talent.trim());
+          }
+          return arr.length > 0 ? arr.join(', ') : null;
+        })(),
         open_comments: data.open_comments || null
       };
 
       delete (payload as any).other_church_headquarters;
+      delete (payload as any).other_talent;
+      delete (payload as any).other_study_area;
       
       console.log('Enviando datos a Supabase:', payload);
       
-      const { error } = await supabase
-        .from('characterization_records')
-        .insert([payload]);
+      const { error: supabaseError } = await supabase.rpc('upsert_record_safely', {
+        payload: payload
+      });
 
-      if (error) {
-        console.error('Error detallado de Supabase:', error);
-        throw new Error(error.message || 'Error desconocido al guardar');
+      if (supabaseError) {
+        console.error('Error detallado de Supabase:', supabaseError);
+        throw new Error(supabaseError.message || 'Error desconocido al guardar');
       }
       
       console.log('Registro exitoso');
@@ -463,8 +483,8 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
              <p className="text-sm font-medium opacity-90 leading-tight">Reciba oportunidades de empleo, vacantes y convocatorias juveniles.</p>
           </div>
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
-             <div className="text-2xl">🚀</div>
-             <p className="text-sm font-medium opacity-90 leading-tight">Participe en actividades culturales, recreativas y eventos exclusivos.</p>
+             <div className="text-2xl">💙</div>
+             <p className="text-sm font-medium opacity-90 leading-tight">Conozca actividades, líderes, novedades y espacios de participación de Juventudes MIRA.</p>
           </div>
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
              <div className="text-2xl">📚</div>
@@ -616,6 +636,17 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
               onClick={() => setValue('military_status', opt)} 
             />
           ))}
+          <AnimatePresence>
+            {errors.military_status && (
+              <motion.p 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-rose-500 text-[10px] font-black uppercase tracking-widest italic mt-2 text-center"
+              >
+                {errors.military_status.message as string}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
       );
     case 'contact':
@@ -853,15 +884,52 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
       );
     case 'talents':
       return (
-        <div className="space-y-4">
-           <Controller name="talents" control={control} render={({ field }) => (
-             <Input 
-               {...field} 
-               placeholder="Tus habilidades o talentos..." 
-               className={inputClass}
-             />
-           )} />
-           <p className="text-center text-[10px] uppercase font-bold text-foreground/50 dark:text-foreground/30 italic">Ej: Canto, Programación, Baile, Oratoria...</p>
+        <div className="space-y-6 animate-fade-in relative z-10 w-full max-h-[50vh] overflow-y-auto no-scrollbar pb-10">
+           <div className="text-center mb-6 space-y-2">
+             <p className="text-[15px] sm:text-base font-bold text-foreground/90 leading-snug px-2">
+               ¿Con qué talentos o habilidades podrías apoyar al Partido MIRA?
+             </p>
+           </div>
+           
+           <div className="space-y-6">
+             {TALENTS_CATEGORIES.map(category => (
+               <div key={category.category} className="space-y-3 flex flex-col items-start w-full">
+                 <h4 className="text-[10px] text-left uppercase font-black tracking-widest opacity-50 px-2">{category.category}</h4>
+                 <div className="grid grid-cols-2 gap-2 px-1 w-full">
+                   {category.options.map(opt => {
+                     const isSelected = watch('talents')?.includes(opt);
+                     return (
+                       <SelectableCard 
+                         key={opt} 
+                         label={opt} 
+                         active={isSelected} 
+                         onClick={() => {
+                           const current = watch('talents') || [];
+                           setValue('talents', 
+                             isSelected 
+                               ? current.filter(i => i !== opt)
+                               : [...current, opt]
+                           );
+                         }} 
+                       />
+                     );
+                   })}
+                 </div>
+               </div>
+             ))}
+             
+             <div className="space-y-2 pt-4 border-t border-border/50">
+               <h4 className="text-[10px] uppercase font-black tracking-widest opacity-50 px-2">Otro (Especifique)</h4>
+               <Controller name="other_talent" control={control} render={({ field }) => (
+                 <Input 
+                   {...field} 
+                   value={field.value || ''}
+                   placeholder="Ej: Programación, Diseño..." 
+                   className={inputClass}
+                 />
+               )} />
+             </div>
+           </div>
         </div>
       );
     case 'education':
@@ -878,26 +946,52 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
         </div>
       );
     case 'study_area':
+      const hasOtherStudyArea = watch('study_area')?.includes('Otra');
       return (
-        <div className="grid grid-cols-2 gap-2 px-1 max-h-[40vh] overflow-y-auto no-scrollbar py-2">
-          {STUDY_AREAS.map(a => {
-            const isSelected = watch('study_area')?.includes(a);
-            return (
-              <SelectableCard 
-                key={a} 
-                label={a} 
-                active={isSelected} 
-                onClick={() => {
-                  const current = watch('study_area') || [];
-                  setValue('study_area', 
-                    isSelected 
-                      ? current.filter(i => i !== a)
-                      : [...current, a]
-                  );
-                }} 
-              />
-            );
-          })}
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto no-scrollbar pb-10 px-1">
+          <div className="grid grid-cols-2 gap-2">
+            {STUDY_AREAS.map(a => {
+              const isSelected = watch('study_area')?.includes(a);
+              return (
+                <SelectableCard 
+                  key={a} 
+                  label={a} 
+                  active={isSelected} 
+                  onClick={() => {
+                    const current = watch('study_area') || [];
+                    setValue('study_area', 
+                      isSelected 
+                        ? current.filter(i => i !== a)
+                        : [...current, a]
+                    );
+                    if (isSelected && a === 'Otra') {
+                      setValue('other_study_area', '');
+                    }
+                  }} 
+                />
+              );
+            })}
+          </div>
+          <AnimatePresence>
+            {hasOtherStudyArea && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pt-2"
+              >
+                <Label className="text-[10px] uppercase font-black tracking-widest opacity-50 px-2 mb-2 block">¿Cuál área?</Label>
+                <Controller name="other_study_area" control={control} render={({ field }) => (
+                  <Input 
+                    {...field} 
+                    value={field.value || ''}
+                    placeholder="Escribe tu área de estudio" 
+                    className={inputClass}
+                  />
+                )} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       );
     case 'interests':
@@ -1277,6 +1371,24 @@ function SelectableCard({ label, active, onClick }: SelectableCardProps) {
     >
       <span className="uppercase tracking-tight text-left leading-tight">{label}</span>
       {active && <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-white shrink-0 ml-2" />}
+    </motion.button>
+  );
+}
+
+function SelectablePill({ label, active, onClick }: SelectableCardProps) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      type="button"
+      onClick={onClick}
+      className={`relative inline-flex items-center px-4 py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all duration-300 border shadow-sm ${
+        active 
+          ? 'bg-primary text-white border-primary shadow-primary/25 shadow-lg relative z-10' 
+          : 'bg-background hover:bg-foreground/5 text-foreground/80 border-foreground/20 hover:border-foreground/40'
+      }`}
+    >
+      {active && <CheckCircle2 className="w-3.5 h-3.5 mr-1.5 shrink-0" />}
+      {label}
     </motion.button>
   );
 }

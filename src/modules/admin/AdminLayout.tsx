@@ -11,6 +11,7 @@ import {
   FileText, 
   LayoutDashboard,
   Menu,
+  Briefcase,
   X,
   UserCircle
 } from 'lucide-react';
@@ -52,6 +53,7 @@ export default function AdminLayout() {
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { label: 'Registros', icon: Users, path: '/admin/registros' },
+    { label: 'Ofertas Públicas', icon: Briefcase, path: '/admin/ofertas' },
     { label: 'Configuración', icon: Settings, path: '/admin/config' },
   ];
 

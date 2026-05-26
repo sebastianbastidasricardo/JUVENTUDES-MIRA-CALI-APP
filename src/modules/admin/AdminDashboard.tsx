@@ -5,13 +5,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, LabelList, Legend
 } from 'recharts';
-import { Users, UserPlus, MapPin, GraduationCap, TrendingUp, Activity, Sparkles, Zap, Shield, Filter, Church } from 'lucide-react';
+import { Users, UserPlus, MapPin, GraduationCap, TrendingUp, Activity, Sparkles, Zap, Shield, Filter, Building, Church } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { calculateAge } from '@/utils/validators';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminDashboard() {
   const [allData, setAllData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [globalSedeFilter, setGlobalSedeFilter] = useState('all');
+  const [globalComunaFilter, setGlobalComunaFilter] = useState('all');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,7 +70,31 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const filteredData = allData;
+  const filteredData = useMemo(() => {
+    return allData.filter(d => {
+       if (globalComunaFilter !== 'all' && d.commune !== globalComunaFilter) return false;
+       if (globalSedeFilter !== 'all' && d.church_headquarters !== globalSedeFilter) return false;
+       return true;
+    });
+  }, [allData, globalComunaFilter, globalSedeFilter]);
+
+  const filterOptions = useMemo(() => {
+    const sedes = new Set<string>();
+    const comunas = new Set<string>();
+    allData.forEach(d => {
+      if (d.church_headquarters) sedes.add(d.church_headquarters);
+      if (d.commune) comunas.add(d.commune);
+    });
+    return {
+      sedes: Array.from(sedes).sort(),
+      comunas: Array.from(comunas).sort((a, b) => {
+         const numA = parseInt(a.replace(/\D/g, '')) || 0;
+         const numB = parseInt(b.replace(/\D/g, '')) || 0;
+         if (numA && numB) return numA - numB;
+         return a.localeCompare(b);
+      })
+    };
+  }, [allData]);
 
   // Generate Stats from currently filtered data
   const stats = useMemo(() => {
@@ -102,20 +129,22 @@ export default function AdminDashboard() {
 
     const avgAge = filteredData.reduce((sum, d) => sum + (d.age || 0), 0) / (total || 1);
 
-    const toSortedChartData = (obj: any, limit = 10) => Object.entries(obj).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value).slice(0, limit);
+    const toSortedChartData = (obj: any, limit = 10) => Object.entries(obj).map(([name, value]) => ({ name, value: value as number })).sort((a: any, b: any) => b.value - a.value).slice(0, limit);
 
     return {
       total,
       newToday: filteredData.filter(d => new Date(d.created_at).toDateString() === new Date().toDateString()).length,
-      byGender: Object.entries(genres).map(([name, value]) => ({ name, value })),
+      byGender: Object.entries(genres).map(([name, value]) => ({ name, value: value as number })),
       byCommune: toSortedChartData(communes, 10),
+      byCommuneAll: toSortedChartData(communes, 100),
       byNeighborhood: toSortedChartData(neighborhoods, 8),
       byInterest: toSortedChartData(interestStats, 10),
       byStudyArea: toSortedChartData(studyAreaStats, 10),
       byTalents: toSortedChartData(talentsStats, 8),
-      byEducation: Object.entries(education).map(([name, value]) => ({ name, value })).sort((a: any, b: any) => b.value - a.value),
+      byEducation: Object.entries(education).map(([name, value]) => ({ name, value: value as number })).sort((a: any, b: any) => b.value - a.value),
       byMilitary: toSortedChartData(military, 5),
       byChurchHQ: toSortedChartData(churchHQ, 10),
+      byChurchHQAll: toSortedChartData(churchHQ, 100),
       boolAnalytics: booleanStats,
       ageDistribution: [
         { range: '14-17', count: filteredData.filter(d => d.age < 18).length },
@@ -148,6 +177,26 @@ export default function AdminDashboard() {
            <p className="text-muted-foreground font-medium uppercase text-[10px] tracking-[0.3em]">Comando de Caracterización Juvenil • Cali</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <Select value={globalSedeFilter} onValueChange={setGlobalSedeFilter}>
+              <SelectTrigger className="glass border-none rounded-xl min-w-[160px]">
+                 <span className="truncate">{globalSedeFilter === 'all' ? 'Sede' : globalSedeFilter}</span>
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] z-[100] bg-background/95 backdrop-blur-xl border border-foreground/10">
+                <SelectItem value="all">Todas las Sedes</SelectItem>
+                {filterOptions.sedes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={globalComunaFilter} onValueChange={setGlobalComunaFilter}>
+              <SelectTrigger className="glass border-none rounded-xl min-w-[160px]">
+                 <span className="truncate">{globalComunaFilter === 'all' ? 'Comuna' : globalComunaFilter}</span>
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] z-[100] bg-background/95 backdrop-blur-xl border border-foreground/10">
+                <SelectItem value="all">Todas las Comunas</SelectItem>
+                {filterOptions.comunas.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
             <div className="flex items-center gap-2 px-4 py-3 glass rounded-xl h-full">
                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sincronización Activa</span>
@@ -216,7 +265,7 @@ export default function AdminDashboard() {
         <Card className="lg:col-span-2 glass border-none shadow-2xl p-4 md:p-6">
            <CardHeader className="px-0 pt-0">
              <CardTitle className="text-lg md:text-xl font-black tracking-tight flex items-center gap-2">
-                <Church className="w-5 h-5 text-indigo-500" /> DISPERSIÓN DE SEDES 
+                <Building className="w-5 h-5 text-indigo-500" /> DISPERSIÓN DE SEDES 
              </CardTitle>
              <CardDescription className="text-[10px] uppercase font-bold tracking-widest opacity-50">Distribución de asistencia interna</CardDescription>
            </CardHeader>

@@ -1,0 +1,30 @@
+name: Automatically Update Public Offers
+
+on:
+  schedule:
+    # Se ejecuta todos los días a las 6:00 AM UTC (1:00 AM Hora de Colombia)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Permite ejecutar el script manualmente desde la interfaz de GitHub
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' # Usa una versión moderna de Node
+
+    - name: Install dependencies
+      run: npm install rss-parser dotenv @supabase/supabase-js
+
+    - name: Run Scraper Script
+      env:
+        # Aquí configuramos las variables usando GitHub Secrets
+        VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      run: node scripts/update-offers.js

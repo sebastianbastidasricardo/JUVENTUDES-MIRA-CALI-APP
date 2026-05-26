@@ -53,7 +53,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CALI_COMMUNES, NEIGHBORHOODS_BY_COMMUNE } from '@/constants/cali';
+import { EditRegistroDialog } from './EditRegistroDialog';
+import { CALI_COMMUNES, NEIGHBORHOODS_BY_COMMUNE, TALENTS_CATEGORIES, EDUCATION_LEVELS, INTERESTS } from '@/constants/cali';
 import { calculateAge } from '@/utils/validators';
 
 export default function RegistrosPage() {
@@ -69,23 +70,26 @@ export default function RegistrosPage() {
     organization: 'all',
     subscribed: 'all'
   });
-  const [filterAge, setFilterAge] = useState({ operator: 'all', value: 18 });
+  const [filterAge, setFilterAge] = useState({ operator: 'all', value: 18, value2: 25 });
   const [filterInternal, setFilterInternal] = useState('all');
   const [filterMilitary, setFilterMilitary] = useState('all');
   const [filterHQ, setFilterHQ] = useState('all');
   const [filterStudyArea, setFilterStudyArea] = useState('all');
+  const [filterTalent, setFilterTalent] = useState('all');
+  const [filterInterest, setFilterInterest] = useState('all');
 
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const pageSize = 10;
+  const pageSize = 25;
 
   useEffect(() => {
     fetchRegistros();
-  }, [currentPage, searchTerm, filterCommune, filterGender, filterEducation, boolFilters, filterAge, filterInternal, filterMilitary, filterHQ, filterStudyArea]);
+  }, [currentPage, searchTerm, filterCommune, filterGender, filterEducation, boolFilters, filterAge, filterInternal, filterMilitary, filterHQ, filterStudyArea, filterTalent, filterInterest]);
 
   const fetchRegistros = async () => {
     setLoading(true);
@@ -134,8 +138,12 @@ export default function RegistrosPage() {
       
       if (filterAge.operator !== 'all') {
         const val = filterAge.value;
+        const val2 = filterAge.value2;
         if (filterAge.operator === 'greater') filtered = filtered.filter(d => d.age > val);
+        if (filterAge.operator === 'greater_equal') filtered = filtered.filter(d => d.age >= val);
         if (filterAge.operator === 'less') filtered = filtered.filter(d => d.age < val);
+        if (filterAge.operator === 'less_equal') filtered = filtered.filter(d => d.age <= val);
+        if (filterAge.operator === 'between') filtered = filtered.filter(d => d.age >= val && d.age <= val2);
         if (filterAge.operator === 'equal') filtered = filtered.filter(d => d.age === val);
       }
 
@@ -146,7 +154,9 @@ export default function RegistrosPage() {
 
       if (filterMilitary !== 'all') filtered = filtered.filter(d => d.military_status === filterMilitary);
       if (filterHQ !== 'all') filtered = filtered.filter(d => d.church_headquarters === filterHQ);
-      if (filterStudyArea !== 'all') filtered = filtered.filter(d => d.study_area && d.study_area.includes(filterStudyArea));
+      if (filterStudyArea !== 'all') filtered = filtered.filter(d => d.study_area && d.study_area.some((a: string) => filterStudyArea === 'Otra' ? a.startsWith('Otra') : a === filterStudyArea));
+      if (filterTalent !== 'all') filtered = filtered.filter(d => d.talents && d.talents.includes(filterTalent));
+      if (filterInterest !== 'all') filtered = filtered.filter(d => d.interests && d.interests.includes(filterInterest));
 
       setTotalCount(count || 0);
       const paginated = filtered.slice(from, to + 1);
@@ -204,8 +214,12 @@ export default function RegistrosPage() {
       if (onlyFiltered) {
         if (filterAge.operator !== 'all') {
           const val = filterAge.value;
+          const val2 = filterAge.value2;
           if (filterAge.operator === 'greater') finalData = finalData.filter(d => d.age > val);
+          if (filterAge.operator === 'greater_equal') finalData = finalData.filter(d => d.age >= val);
           if (filterAge.operator === 'less') finalData = finalData.filter(d => d.age < val);
+          if (filterAge.operator === 'less_equal') finalData = finalData.filter(d => d.age <= val);
+          if (filterAge.operator === 'between') finalData = finalData.filter(d => d.age >= val && d.age <= val2);
           if (filterAge.operator === 'equal') finalData = finalData.filter(d => d.age === val);
         }
         if (filterInternal !== 'all') {
@@ -214,7 +228,9 @@ export default function RegistrosPage() {
         }
         if (filterMilitary !== 'all') finalData = finalData.filter(d => d.military_status === filterMilitary);
         if (filterHQ !== 'all') finalData = finalData.filter(d => d.church_headquarters === filterHQ);
-        if (filterStudyArea !== 'all') finalData = finalData.filter(d => d.study_area && d.study_area.includes(filterStudyArea));
+        if (filterStudyArea !== 'all') finalData = finalData.filter(d => d.study_area && d.study_area.some((a: string) => filterStudyArea === 'Otra' ? a.startsWith('Otra') : a === filterStudyArea));
+        if (filterTalent !== 'all') finalData = finalData.filter(d => d.talents && d.talents.includes(filterTalent));
+        if (filterInterest !== 'all') finalData = finalData.filter(d => d.interests && d.interests.includes(filterInterest));
       }
 
       if (finalData.length === 0) {
@@ -222,7 +238,37 @@ export default function RegistrosPage() {
         return;
       }
 
-      const ws = XLSX.utils.json_to_sheet(finalData);
+      const flatData = finalData.map(d => ({
+        'Nombres': d.first_name,
+        'Apellidos': d.last_name,
+        'Tipo Doc.': d.document_type,
+        'No. Documento': d.document_number,
+        'Fecha Nac.': d.birth_date,
+        'Edad': d.age,
+        'Género': d.gender,
+        'Sit. Militar': d.military_status || 'N/A',
+        'Teléfono': d.phone,
+        'Email': d.email,
+        'Comuna': d.commune,
+        'Barrio': d.neighborhood,
+        'Educación': d.education_level,
+        'Área Estudio': Array.isArray(d.study_area) ? d.study_area.join(', ') : (d.study_area || 'N/A'),
+        'Trabaja': d.is_working ? 'Sí' : 'No',
+        'Profesión': d.profession || 'N/A',
+        'Emprendedor': d.is_entrepreneur ? 'Sí' : 'No',
+        'Cual Emprendimiento': d.entrepreneur_name || 'N/A',
+        'Pertenece Org.': d.is_in_organization ? 'Sí' : 'No',
+        'Cual Organización': d.organization_name || 'N/A',
+        'Intereses': Array.isArray(d.interests) ? d.interests.join(', ') : (d.interests || 'N/A'),
+        'Talentos': Array.isArray(d.talents) ? d.talents.join(', ') : (d.talents || 'N/A'),
+        'Origen (Iglesia)': d.is_internal ? 'Sí' : 'No',
+        'Sede Iglesia': d.church_headquarters || 'N/A',
+        'Subscrito InfoMIRA': d.is_infomira_subscribed ? 'Sí' : 'No',
+        'Observaciones': d.open_comments || 'N/A',
+        'Fecha Registro': new Date(d.created_at).toLocaleString()
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(flatData);
       
       if (type === 'csv') {
          const csvOutput = XLSX.utils.sheet_to_csv(ws);
@@ -382,11 +428,11 @@ export default function RegistrosPage() {
                           <SelectContent className="glass-dark border-foreground/10">
                              <SelectItem value="all">Educación (Todos)</SelectItem>
                              <SelectItem value="Primaria">Primaria</SelectItem>
-                             <SelectItem value="Secundaria">Secundaria</SelectItem>
+                             <SelectItem value="Bachillerato">Bachillerato</SelectItem>
                              <SelectItem value="Técnico">Técnico</SelectItem>
                              <SelectItem value="Tecnólogo">Tecnólogo</SelectItem>
-                             <SelectItem value="Universitario">Universitario</SelectItem>
-                             <SelectItem value="Postgrado">Postgrado</SelectItem>
+                             <SelectItem value="Profesional">Profesional</SelectItem>
+                             <SelectItem value="Maestría">Maestría</SelectItem>
                           </SelectContent>
                        </Select>
                     </div>
@@ -396,22 +442,36 @@ export default function RegistrosPage() {
                        <label className="text-[10px] font-black uppercase opacity-40 ml-1">Edad</label>
                        <div className="flex gap-2">
                           <select 
-                             className="flex-1 bg-background/50 border-none rounded-xl text-xs px-3 focus:outline-none focus:ring-1 focus:ring-primary/20 h-10"
+                             className="flex-[2] bg-background/50 border-none rounded-xl text-[11px] px-2 focus:outline-none focus:ring-1 focus:ring-primary/20 h-10 overflow-hidden text-ellipsis"
                              value={filterAge.operator}
                              onChange={e => setFilterAge({...filterAge, operator: e.target.value})}
                           >
                              <option value="all">Todas</option>
-                             <option value="greater">Mayor a</option>
-                             <option value="less">Menor a</option>
+                             <option value="greater">Mayor que</option>
+                             <option value="greater_equal">Mayor o igual que</option>
+                             <option value="less">Menor que</option>
+                             <option value="less_equal">Menor o igual que</option>
+                             <option value="between">Entre dos edades</option>
                              <option value="equal">Exactamente</option>
                           </select>
                           {filterAge.operator !== 'all' && (
                              <input 
                                type="number" 
-                               className="w-16 bg-background/50 border-none rounded-xl text-xs px-2 text-center h-10 focus:outline-none"
+                               className="w-14 bg-background/50 border-none rounded-xl text-xs px-1 text-center h-10 focus:outline-none"
                                value={filterAge.value}
                                onChange={e => setFilterAge({...filterAge, value: parseInt(e.target.value) || 0})}
                              />
+                          )}
+                          {filterAge.operator === 'between' && (
+                             <>
+                               <span className="flex items-center text-xs opacity-50">-</span>
+                               <input 
+                                 type="number" 
+                                 className="w-14 bg-background/50 border-none rounded-xl text-xs px-1 text-center h-10 focus:outline-none"
+                                 value={filterAge.value2}
+                                 onChange={e => setFilterAge({...filterAge, value2: parseInt(e.target.value) || 0})}
+                               />
+                             </>
                           )}
                        </div>
                     </div>
@@ -432,10 +492,41 @@ export default function RegistrosPage() {
 
                     <div className="space-y-2 lg:col-span-4">
                        <label className="text-[10px] font-black uppercase opacity-40 ml-1">Atributos Rápidos</label>
-                       <div className="flex flex-wrap gap-2">
-                          <FilterBadge active={boolFilters.working === 'yes'} onClick={() => setBoolFilters(prev => ({...prev, working: prev.working === 'yes' ? 'all' : 'yes'}))} label="Trabaja" />
-                          <FilterBadge active={boolFilters.entrepreneur === 'yes'} onClick={() => setBoolFilters(prev => ({...prev, entrepreneur: prev.entrepreneur === 'yes' ? 'all' : 'yes'}))} label="Emprendedor" />
-                          <FilterBadge active={boolFilters.subscribed === 'yes'} onClick={() => setBoolFilters(prev => ({...prev, subscribed: prev.subscribed === 'yes' ? 'all' : 'yes'}))} label="Subscrito" />
+                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <Select value={boolFilters.working} onValueChange={val => setBoolFilters(prev => ({...prev, working: val}))}>
+                             <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                                <span className="truncate">{boolFilters.working === 'all' ? 'Trabaja? (Todos)' : boolFilters.working === 'yes' ? 'Sí Trabaja' : 'No Trabaja'}</span>
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="all">Trabaja? (Todos)</SelectItem>
+                                <SelectItem value="yes">Sí Trabaja</SelectItem>
+                                <SelectItem value="no">No Trabaja</SelectItem>
+                             </SelectContent>
+                          </Select>
+
+                          <Select value={boolFilters.entrepreneur} onValueChange={val => setBoolFilters(prev => ({...prev, entrepreneur: val}))}>
+                             <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                                <span className="truncate">{boolFilters.entrepreneur === 'all' ? 'Emprendedor? (Todos)' : boolFilters.entrepreneur === 'yes' ? 'Sí Emprendedor' : 'No Emprendedor'}</span>
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="all">Emprendedor? (Todos)</SelectItem>
+                                <SelectItem value="yes">Sí Emprendedor</SelectItem>
+                                <SelectItem value="no">No Emprendedor</SelectItem>
+                             </SelectContent>
+                          </Select>
+
+                          <Select value={boolFilters.subscribed} onValueChange={val => setBoolFilters(prev => ({...prev, subscribed: val}))}>
+                             <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                                <span className="truncate">{boolFilters.subscribed === 'all' ? 'Suscrito a InfoMIRA? (Todos)' : boolFilters.subscribed === 'yes' ? 'Sí Suscrito' : 'No Suscrito'}</span>
+                             </SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="all">Suscrito a InfoMIRA? (Todos)</SelectItem>
+                                <SelectItem value="yes">Sí Suscrito</SelectItem>
+                                <SelectItem value="no">No Suscrito</SelectItem>
+                             </SelectContent>
+                          </Select>
+                       </div>
+                       <div className="flex justify-end pt-2">
                           <Button 
                              size="sm" 
                              variant="ghost" 
@@ -443,10 +534,11 @@ export default function RegistrosPage() {
                                setSearchTerm(''); setFilterCommune('all'); setFilterGender('all'); 
                                setFilterEducation('all');
                                setBoolFilters({working:'all', entrepreneur:'all', organization:'all', subscribed:'all'});
-                               setFilterAge({operator:'all', value:18});
+                               setFilterAge({operator:'all', value:18, value2:25});
                                setFilterInternal('all'); setFilterMilitary('all'); setFilterHQ('all'); setFilterStudyArea('all');
+                               setFilterTalent('all');
                              }}
-                             className="h-8 rounded-lg text-[10px] font-black uppercase tracking-tight px-3 ml-auto text-rose-500 hover:bg-rose-500/10"
+                             className="h-8 rounded-lg text-[10px] font-black uppercase tracking-tight px-3 text-rose-500 hover:bg-rose-500/10"
                           >
                              Limpiar Filtros
                           </Button>
@@ -487,6 +579,61 @@ export default function RegistrosPage() {
                            </SelectContent>
                         </Select>
                     </div>
+
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black uppercase opacity-40 ml-1">Área de Estudio</label>
+                       <Select value={filterStudyArea} onValueChange={setFilterStudyArea}>
+                          <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                             <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="glass-dark border-foreground/10 max-h-[300px]">
+                             <SelectItem value="all">Todas</SelectItem>
+                             {[
+                                'Tecnología / TI', 'Derecho y Ciencias Políticas', 'Salud / Medicina',
+                                'Ingeniería', 'Arte / Diseño', 'Administración y Negocios',
+                                'Servicio al Cliente y Ventas', 'Educación', 'Comunicación / Marketing',
+                                'Logística y Operación', 'Otra'
+                             ].map(area => (
+                                <SelectItem key={area} value={area}>{area}</SelectItem>
+                             ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black uppercase opacity-40 ml-1">Talento / Habilidad</label>
+                       <Select value={filterTalent} onValueChange={setFilterTalent}>
+                          <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                             <span className="truncate">{filterTalent === 'all' ? 'Todos los Talentos' : filterTalent}</span>
+                          </SelectTrigger>
+                          <SelectContent className="glass-dark border-foreground/10 max-h-[300px]">
+                             <SelectItem value="all">Todos los Talentos</SelectItem>
+                             {TALENTS_CATEGORIES.map(category => (
+                               <div key={category.category}>
+                                 <div className="px-2 py-1 text-[10px] uppercase font-black opacity-50 bg-foreground/5">{category.category}</div>
+                                 {category.options.map(opt => (
+                                   <SelectItem key={opt} value={opt} className="pl-4">{opt}</SelectItem>
+                                 ))}
+                               </div>
+                             ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black uppercase opacity-40 ml-1">Temas de Interés</label>
+                       <Select value={filterInterest} onValueChange={setFilterInterest}>
+                          <SelectTrigger className="glass-dark border-none rounded-xl h-10">
+                             <span className="truncate">{filterInterest === 'all' ? 'Todos' : filterInterest}</span>
+                          </SelectTrigger>
+                          <SelectContent className="glass-dark border-foreground/10 max-h-[300px]">
+                             <SelectItem value="all">Todos</SelectItem>
+                             {INTERESTS.map(i => (
+                               <SelectItem key={i} value={i}>{i}</SelectItem>
+                             ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
                  </div>
                </motion.div>
              )}
@@ -524,8 +671,9 @@ export default function RegistrosPage() {
                             setSearchTerm(''); setFilterCommune('all'); setFilterGender('all'); 
                             setFilterEducation('all');
                             setBoolFilters({working:'all', entrepreneur:'all', organization:'all', subscribed:'all'});
-                            setFilterAge({operator:'all', value:18});
+                            setFilterAge({operator:'all', value:18, value2:25});
                             setFilterInternal('all'); setFilterMilitary('all'); setFilterHQ('all'); setFilterStudyArea('all');
+                            setFilterTalent('all');
                          }}>Limpiar filtros</Button>
                       </div>
                     </TableCell>
@@ -589,6 +737,15 @@ export default function RegistrosPage() {
                                className="gap-3 cursor-pointer focus:bg-primary/20 focus:text-primary rounded-xl py-3 font-bold text-xs"
                              >
                                <div className="p-1.5 bg-primary/10 rounded-lg"><Eye className="h-3.5 w-3.5" /></div> Ver Detalles
+                             </DropdownMenuItem>
+                             <DropdownMenuItem 
+                               onClick={() => {
+                                 setSelectedRecord(registro);
+                                 setIsEditOpen(true);
+                               }}
+                               className="gap-3 cursor-pointer focus:bg-blue-500/20 focus:text-blue-500 rounded-xl py-3 font-bold text-xs"
+                             >
+                               <div className="p-1.5 bg-blue-500/10 rounded-lg"><Info className="h-3.5 w-3.5" /></div> Editar
                              </DropdownMenuItem>
                              <DropdownMenuItem 
                                onClick={() => {
@@ -760,6 +917,13 @@ export default function RegistrosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditRegistroDialog 
+        isOpen={isEditOpen} 
+        onClose={() => setIsEditOpen(false)} 
+        record={selectedRecord} 
+        onSaved={fetchRegistros} 
+      />
     </div>
   );
 }
