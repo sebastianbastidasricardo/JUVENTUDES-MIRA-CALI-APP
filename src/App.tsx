@@ -14,7 +14,6 @@ import AdminLogin from '@/modules/admin/AdminLogin';
 import AdminLayout from '@/modules/admin/AdminLayout';
 import RegistrosPage from '@/modules/admin/RegistrosPage';
 import SettingsPage from '@/modules/admin/SettingsPage';
-import OffersPage from '@/modules/admin/OffersPage';
 import { supabase } from '@/lib/supabase';
 import { AlertCircle } from 'lucide-react';
 
@@ -57,7 +56,6 @@ export default function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="registros" element={<RegistrosPage />} />
-            <Route path="ofertas" element={<OffersPage />} />
             <Route path="config" element={<SettingsPage />} />
           </Route>
 
