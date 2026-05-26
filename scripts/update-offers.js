@@ -13,7 +13,8 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY; // Nota: Para inserciones puede requerirse el Service Role Key si hay políticas RLS (idealmente usa VITE_SUPABASE_SERVICE_ROLE_KEY o configura RLS para permitir al script)
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("Faltan las variables de entorno de Supabase (SUPABASE_URL o SUPABASE_ANON_KEY)");
+  console.error("❌ Faltan las variables de entorno de Supabase (SUPABASE_URL o SUPABASE_ANON_KEY).");
+  console.error("Asegúrate de que agregaste correctamente los 'Repository Secrets' en GitHub y que no están vacíos.");
   process.exit(1);
 }
 

@@ -17,14 +17,14 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20' # Usa una versión moderna de Node
+        node-version: '22' # Usa una versión moderna de Node
 
     - name: Install dependencies
       run: npm install rss-parser dotenv @supabase/supabase-js
 
     - name: Run Scraper Script
       env:
-        # Aquí configuramos las variables usando GitHub Secrets
-        VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        # Aquí mapeamos tanto los nombres con VITE_ como sin VITE_ por si acaso
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || secrets.SUPABASE_ANON_KEY }}
       run: node scripts/update-offers.js
