@@ -88,22 +88,22 @@ export default function LandingPage() {
               <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary">Caracterización</span>
             </motion.div>
             
-            <h1 className="text-[min(14vw,64px)] sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] uppercase flex flex-col items-center">
+            <h1 className="font-black tracking-tighter uppercase flex flex-col items-center w-full">
               <motion.span 
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 1.2, delay: 0.1 }}
-                className="text-foreground"
+                className="text-[min(18vw,110px)] sm:text-8xl md:text-9xl lg:text-[130px] leading-[0.85] text-primary whitespace-nowrap"
               >
-                 Juventudes
+                MIRA VE
               </motion.span>
               <motion.span 
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 1.2, delay: 0.3 }}
-                className="text-title-mira-cali italic mt-1"
+                className="text-[min(9vw,45px)] sm:text-4xl md:text-5xl lg:text-[54px] leading-[0.9] text-muted-foreground/90 italic whitespace-nowrap mt-1 md:mt-2"
               >
-                Mira Cali
+                JUVENTUDES CALI
               </motion.span>
             </h1>
           </motion.div>
