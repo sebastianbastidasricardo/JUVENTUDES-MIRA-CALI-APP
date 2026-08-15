@@ -261,7 +261,7 @@ export default function RegistrosPage() {
         'Cual Organización': d.organization_name || 'N/A',
         'Intereses': Array.isArray(d.interests) ? d.interests.join(', ') : (d.interests || 'N/A'),
         'Talentos': Array.isArray(d.talents) ? d.talents.join(', ') : (d.talents || 'N/A'),
-        'Origen (Iglesia)': d.is_internal ? 'Sí' : 'No',
+        'Origen (Iglesia)': d.is_internal ? 'Interno' : `Externo ${!['Evento o Actividad', 'Colegio / Universidad', 'Amigo o familiar'].includes(d.registration_source) ? `(${d.registration_source})` : ''}`,
         'Sede Iglesia': d.church_headquarters || 'N/A',
         'Subscrito InfoMIRA': d.is_infomira_subscribed ? 'Sí' : 'No',
         'Observaciones': d.open_comments || 'N/A',
@@ -867,7 +867,7 @@ export default function RegistrosPage() {
                 </DetailSection>
 
                 <DetailSection title="Participación">
-                  <DetailItem label="Tipo" value={selectedRecord.is_internal ? 'Interno' : 'Externo'} />
+                  <DetailItem label="Tipo" value={selectedRecord.is_internal ? 'Interno' : `Externo ${!['Evento o Actividad', 'Colegio / Universidad', 'Amigo o familiar'].includes(selectedRecord.registration_source) ? `(${selectedRecord.registration_source})` : ''}`} />
                   <DetailItem label="Origen" value={selectedRecord.registration_source} />
                   {selectedRecord.church_headquarters && (
                     <DetailItem label="Sede" value={selectedRecord.church_headquarters} />

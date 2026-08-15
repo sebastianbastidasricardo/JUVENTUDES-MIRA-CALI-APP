@@ -93,9 +93,9 @@ export default function LandingPage() {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 1.2, delay: 0.1 }}
-                className="text-[min(18vw,110px)] sm:text-8xl md:text-9xl lg:text-[130px] leading-[0.85] text-primary whitespace-nowrap"
+                className="text-[min(15vw,90px)] sm:text-7xl md:text-8xl lg:text-[110px] leading-[0.85] text-primary whitespace-nowrap"
               >
-                MIRA VE
+                ¡MIRA VÉ!
               </motion.span>
               <motion.span 
                 initial={{ x: 20, opacity: 0 }}
@@ -114,13 +114,19 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.5 }}
             className="w-full max-w-xs"
           >
-            <Button 
-              size="lg" 
-              className="w-full h-16 md:h-20 rounded-full text-lg md:text-xl font-black shadow-2xl hover:shadow-primary/20 transition-all active:scale-[0.98] bg-primary text-white border-0"
-              onClick={() => navigate('/encuesta')}
+            <motion.div
+              animate={{ scale: [1, 1.03, 1] }}
+              transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+              whileTap={{ scale: 0.95 }}
             >
-              COMENZAR <ArrowRight className="ml-3 w-5 h-5 md:w-6 md:h-6" />
-            </Button>
+              <Button 
+                size="lg" 
+                className="w-full h-16 md:h-20 rounded-full text-lg md:text-xl font-black shadow-2xl hover:shadow-primary/20 transition-all bg-primary text-white border-0"
+                onClick={() => navigate('/encuesta')}
+              >
+                COMENZAR <ArrowRight className="ml-3 w-5 h-5 md:w-6 md:h-6" />
+              </Button>
+            </motion.div>
           </motion.div>
         </div>
 

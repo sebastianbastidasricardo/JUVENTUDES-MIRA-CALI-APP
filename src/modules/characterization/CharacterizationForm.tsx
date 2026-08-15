@@ -46,6 +46,7 @@ const formSchema = z.object({
   email: z.string().email('Email inválido'),
   is_infomira_subscribed: z.boolean(),
   registration_source: z.string().min(1, 'Selecciona cómo te enteraste'),
+  other_registration_source: z.string().optional(),
   church_headquarters: z.string().optional(),
   other_church_headquarters: z.string().optional(),
   neighborhood: z.string().min(2, 'Barrio requerido'),
@@ -130,7 +131,8 @@ const SOURCES = [
   'Evento o Actividad',
   'Iglesia',
   'Colegio / Universidad',
-  'Amigo o familiar'
+  'Amigo o familiar',
+  'OTRO'
 ];
 
 const CHURCH_HEADQUARTERS = [
@@ -152,7 +154,7 @@ const CHURCH_HEADQUARTERS = [
 
 const QUESTION_STEPS = [
   { id: 'welcome', title: '🚀 Oportunidades para ti' },
-  { id: 'source', title: '¿Cómo te enteraste de este espacio?', fields: ['registration_source'], icon: Megaphone },
+  { id: 'source', title: '¿Cómo te enteraste de este espacio?', fields: ['registration_source', 'other_registration_source'], icon: Megaphone },
   { id: 'church', title: '¿A qué sede asistes normalmente?', fields: ['church_headquarters', 'other_church_headquarters'], icon: Megaphone },
   { id: 'name', title: '¿Cómo te llamas?', fields: ['first_name', 'last_name'], icon: User },
   { id: 'id', title: 'Identificación oficial', fields: ['document_type', 'document_number'], icon: CreditCard },
@@ -166,7 +168,7 @@ const QUESTION_STEPS = [
   { id: 'is_working', title: '¿Estás laborando actualmente?', fields: ['is_working'], icon: Briefcase },
   { id: 'profession', title: 'Profesión u ocupación', fields: ['profession'], icon: Briefcase },
   { id: 'is_entrepreneur', title: 'Micronegocio o emprendimiento', fields: ['is_entrepreneur', 'entrepreneur_name'], icon: Sparkles },
-  { id: 'is_in_organization', title: '¿Perteneces a alguna organización?', fields: ['is_in_organization', 'organization_name'], icon: User },
+  { id: 'is_in_organization', title: '¿Haces parte de alguna organización o colectivo?', fields: ['is_in_organization', 'organization_name'], icon: User },
   { id: 'interests', title: 'Temas de interés', fields: ['interests'], icon: Heart },
   { id: 'talents', title: 'Tus talentos ⭐', fields: ['talents', 'other_talent'] },
   { id: 'comments', title: 'Observaciones', fields: ['open_comments'], icon: MessageSquare },
@@ -177,6 +179,7 @@ export default function CharacterizationForm() {
   const [stepIndex, setStepIndex] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOrgInfo, setShowOrgInfo] = useState(false);
   const navigate = useNavigate();
 
   const { control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<FormValues>({
@@ -193,6 +196,7 @@ export default function CharacterizationForm() {
         data_authorization: false,
         commune: CALI_COMMUNES[0],
         registration_source: '',
+        other_registration_source: '',
         church_headquarters: '',
         other_church_headquarters: ''
       }
@@ -220,6 +224,22 @@ export default function CharacterizationForm() {
           setTimeout(() => element.classList.remove('animate-shake'), 500);
         }
         return;
+      }
+    }
+
+    if (currentStep.id === 'source') {
+      const source = watch('registration_source');
+      if (source === 'OTRO') {
+        const otherSource = watch('other_registration_source');
+        if (!otherSource || otherSource.length < 2) {
+          trigger();
+          const element = document.getElementById('step-container');
+          if (element) {
+            element.classList.add('animate-shake');
+            setTimeout(() => element.classList.remove('animate-shake'), 500);
+          }
+          return;
+        }
       }
     }
 
@@ -333,6 +353,7 @@ export default function CharacterizationForm() {
         // Explicitly set nulls for optional text fields if empty strings are passed
         entrepreneur_name: data.is_entrepreneur ? data.entrepreneur_name : null,
         organization_name: data.is_in_organization ? data.organization_name : null,
+        registration_source: data.registration_source === 'OTRO' ? data.other_registration_source : data.registration_source,
         church_headquarters: data.registration_source === 'Iglesia' ? (data.church_headquarters === 'OTRO' ? data.other_church_headquarters : data.church_headquarters) : null,
         is_internal: data.registration_source === 'Iglesia',
         military_status: data.gender === 'Masculino' ? data.military_status : null,
@@ -347,6 +368,7 @@ export default function CharacterizationForm() {
       };
 
       delete (payload as any).other_church_headquarters;
+      delete (payload as any).other_registration_source;
       delete (payload as any).other_talent;
       delete (payload as any).other_study_area;
       
@@ -420,20 +442,47 @@ export default function CharacterizationForm() {
                    <div className="absolute inset-0 bg-primary/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity rounded-full -z-10" />
                 </motion.div>
               )}
-              <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-none italic uppercase flex flex-col md:flex-row items-center justify-center gap-3">
-                <span>
-                  {currentStep.id === 'study_area' 
-                    ? (['Primaria', 'Bachillerato'].includes(watch('education_level')) 
-                        ? '¿En qué área le gustaría trabajar o capacitarse?' 
-                        : 'Área de estudio o experiencia') 
-                    : currentStep.title}
-                </span>
-                {['talents', 'comments'].includes(currentStep.id) && (
-                  <span className="text-[12px] md:text-[14px] bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full inline-flex w-fit not-italic font-bold tracking-widest uppercase">
-                    Opcional
+              <div className="flex flex-col items-center justify-center gap-2">
+                <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-none italic uppercase flex flex-col md:flex-row items-center justify-center gap-3">
+                  <span className="flex items-center justify-center gap-2 md:gap-3 flex-wrap">
+                    {currentStep.id === 'study_area' 
+                      ? (['Primaria', 'Bachillerato'].includes(watch('education_level')) 
+                          ? '¿En qué área le gustaría trabajar o capacitarse?' 
+                          : 'Área de estudio o experiencia') 
+                      : currentStep.title}
+                    {currentStep.id === 'is_in_organization' && (
+                      <button 
+                        onClick={() => setShowOrgInfo(!showOrgInfo)}
+                        type="button" 
+                        className="text-primary hover:scale-110 transition-transform opacity-80 hover:opacity-100 bg-primary/10 rounded-full p-1"
+                      >
+                        <Info className="w-5 h-5 md:w-8 md:h-8" />
+                      </button>
+                    )}
                   </span>
+                  {['talents', 'comments'].includes(currentStep.id) && (
+                    <span className="text-[12px] md:text-[14px] bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full inline-flex w-fit not-italic font-bold tracking-widest uppercase mt-2 md:mt-0">
+                      Opcional
+                    </span>
+                  )}
+                </h2>
+                
+                {currentStep.id === 'is_in_organization' && (
+                  <AnimatePresence>
+                    {showOrgInfo && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: -10, height: 0 }}
+                        className="text-sm md:text-base font-bold text-muted-foreground not-italic tracking-tight mt-2 text-center max-w-sm px-4"
+                      >
+                        <span className="uppercase text-[10px] tracking-widest font-black text-primary mr-1 bg-primary/10 px-2 py-0.5 rounded-md">EJ:</span>
+                        Indígena, afro, campesina, víctimas, mujeres, discapacidad u otra.
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 )}
-              </h2>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -476,15 +525,15 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
         <div className="space-y-3 text-left">
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
              <div className="text-2xl">🎓</div>
-             <p className="text-sm font-medium opacity-90 leading-tight">Acceda a becas, cursos y capacitaciones según sus intereses.</p>
+             <p className="text-sm font-medium opacity-90 leading-tight">Conoce ofertas de becas, cursos y capacitaciones según tus intereses.</p>
           </div>
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
              <div className="text-2xl">💼</div>
-             <p className="text-sm font-medium opacity-90 leading-tight">Reciba oportunidades de empleo, vacantes y convocatorias juveniles.</p>
+             <p className="text-sm font-medium opacity-90 leading-tight">Explora ofertas de empleo, vacantes y convocatorias para jóvenes.</p>
           </div>
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
              <div className="text-2xl">💙</div>
-             <p className="text-sm font-medium opacity-90 leading-tight">Conozca actividades, líderes, novedades y espacios de participación de Juventudes MIRA.</p>
+             <p className="text-sm font-medium opacity-90 leading-tight">Conoce actividades, líderes, novedades y espacios de participación de Juventudes MIRA.</p>
           </div>
           <div className="flex bg-foreground/5 p-4 rounded-2xl items-center gap-4">
              <div className="text-2xl">📚</div>
@@ -711,18 +760,75 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
         </div>
       );
     case 'source':
+      const isOtherSource = watch('registration_source') === 'OTRO';
+      const mainSources = SOURCES.filter(s => s !== 'OTRO');
       return (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2 px-1">
-            {SOURCES.map(s => (
-              <SelectableCard  
-                key={s}
-                label={s} 
-                active={watch('registration_source') === s} 
-                onClick={() => setValue('registration_source', s)} 
-              />
+            {mainSources.map((s) => (
+              <div key={s}>
+                <SelectableCard  
+                  label={s} 
+                  active={watch('registration_source') === s} 
+                  onClick={() => {
+                    setValue('registration_source', s);
+                    setValue('other_registration_source', '');
+                  }} 
+                />
+              </div>
             ))}
           </div>
+          
+          <div className="flex justify-center mt-6 mb-2">
+            <button
+              type="button"
+              onClick={() => {
+                setValue('registration_source', isOtherSource ? '' : 'OTRO');
+                if (!isOtherSource) {
+                  setTimeout(() => {
+                    document.getElementById('other_source_input')?.focus();
+                  }, 100);
+                }
+              }}
+              className={`text-xs font-black tracking-widest uppercase transition-all border-b-2 pb-1 ${
+                isOtherSource 
+                  ? 'text-primary border-primary' 
+                  : 'text-muted-foreground/60 border-transparent hover:text-foreground hover:border-foreground/20'
+              }`}
+            >
+              ¿Te enteraste por otro medio?
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {isOtherSource && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                className="px-1"
+              >
+                <Controller name="other_registration_source" control={control} render={({ field }) => (
+                  <Input 
+                    {...field} 
+                    id="other_source_input"
+                    value={field.value || ''}
+                    placeholder="Escribe por dónde te enteraste..." 
+                    className="h-14 bg-foreground/5 border-foreground/30 dark:border-foreground/10 rounded-2xl px-6 text-base font-bold placeholder:text-foreground/40 dark:placeholder:text-foreground/30 focus:bg-foreground/10 transition-all focus:ring-4 focus:ring-primary/20"
+                  />
+                )} />
+                {errors.other_registration_source && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-rose-500 text-[10px] font-black uppercase tracking-widest italic mt-2 ml-2"
+                  >
+                    {errors.other_registration_source.message}
+                  </motion.p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       );
     case 'church':
@@ -1124,6 +1230,7 @@ interface SelectableCardProps {
   label: string;
   active: boolean;
   onClick: () => void;
+  centered?: boolean;
   key?: any;
 }
 
@@ -1357,20 +1464,24 @@ function CommuneSelector({ value, onChange }: { value: string, onChange: (val: s
   );
 }
 
-function SelectableCard({ label, active, onClick }: SelectableCardProps) {
+function SelectableCard({ label, active, onClick, centered = false }: SelectableCardProps) {
   return (
     <motion.button
       whileTap={{ scale: 0.95 }}
       type="button"
       onClick={onClick}
-      className={`w-full h-14 md:h-16 rounded-2xl px-3 md:px-6 flex items-center justify-between font-bold text-[10px] md:text-sm transition-all ${
+      className={`w-full h-14 md:h-16 rounded-2xl px-3 md:px-6 flex items-center ${
+        centered ? 'justify-center relative' : 'justify-between'
+      } font-bold text-[10px] md:text-sm transition-all ${
         active 
           ? 'bg-primary text-white shadow-2xl mira-blue-glow' 
           : 'bg-foreground/[0.03] dark:bg-foreground/5 border border-foreground/20 dark:border-foreground/10 text-foreground/80 hover:bg-foreground/[0.06] opacity-100'
       }`}
     >
-      <span className="uppercase tracking-tight text-left leading-tight">{label}</span>
-      {active && <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5 text-white shrink-0 ml-2" />}
+      <span className={`uppercase tracking-tight leading-tight ${centered ? 'text-center' : 'text-left'}`}>{label}</span>
+      {active && (
+        <CheckCircle2 className={`w-4 h-4 md:w-5 md:h-5 text-white shrink-0 ${centered ? 'absolute right-4 md:right-6' : 'ml-2'}`} />
+      )}
     </motion.button>
   );
 }
