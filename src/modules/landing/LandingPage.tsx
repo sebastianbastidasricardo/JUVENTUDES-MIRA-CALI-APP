@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const BackgroundAurora = () => (
   <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
@@ -59,6 +60,9 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background relative selection:bg-primary selection:text-white transition-colors duration-500">
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
       <BackgroundAurora />
 
       {/* Decorative Borders for Light Mode */}

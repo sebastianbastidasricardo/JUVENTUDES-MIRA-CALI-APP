@@ -41,9 +41,6 @@ export default function App() {
     <Router>
       <Toaster position="top-center" expand={false} richColors />
       <SupabaseGuard>
-        <div className="fixed top-4 right-4 z-[9999]">
-          <ThemeToggle />
-        </div>
         <div className="min-h-screen bg-background text-foreground font-sans antialiased relative selection:bg-primary selection:text-white">
         <Routes>
           {/* Public Routes */}

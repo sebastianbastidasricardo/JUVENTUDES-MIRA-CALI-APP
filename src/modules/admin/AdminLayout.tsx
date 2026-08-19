@@ -135,6 +135,7 @@ export default function AdminLayout() {
           </div>
           <div className="flex items-center gap-4 flex-shrink-0">
             <span className="hidden sm:inline-block text-[10px] text-muted-foreground bg-foreground/5 dark:bg-white/5 border border-foreground/10 px-2 py-1 rounded uppercase font-black tracking-tighter">Realtime Connected</span>
+            <ThemeToggle />
             <div className="w-8 h-8 rounded-full bg-primary/20 flex md:hidden items-center justify-center font-black text-[10px] text-primary">
                {user?.email?.[0].toUpperCase() || 'A'}
             </div>

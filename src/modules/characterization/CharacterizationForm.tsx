@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -27,7 +28,9 @@ import {
   CreditCard,
   Star,
   Shield,
-  Calendar
+  Calendar,
+  ChevronsDown,
+  Mic, Music, Smile, Volume2, Video, MonitorPlay, Presentation, Package, Trophy, HeartPulse, ShieldCheck, Users, Palette 
 } from 'lucide-react';
 import { calculateAge } from '@/utils/validators';
 import { CALI_COMMUNES, NEIGHBORHOODS_BY_COMMUNE, EDUCATION_LEVELS, GENDERS, INTERESTS, STUDY_AREAS, TALENTS_CATEGORIES } from '@/constants/cali';
@@ -152,6 +155,25 @@ const CHURCH_HEADQUARTERS = [
   'OTRO'
 ];
 
+
+const getTalentIcon = (talent: string) => {
+  switch (talent) {
+    case 'Canto': return <Mic className="w-6 h-6" />;
+    case 'Danza': return <Music className="w-6 h-6" />;
+    case 'Recreación juvenil': return <Smile className="w-6 h-6" />;
+    case 'Manejo de Sonido': return <Volume2 className="w-6 h-6" />;
+    case 'Video y camarografía': return <Video className="w-6 h-6" />;
+    case 'Edición audiovisual': return <MonitorPlay className="w-6 h-6" />;
+    case 'Charlas y capacitaciones': return <Presentation className="w-6 h-6" />;
+    case 'Apoyo logístico y eventos': return <Package className="w-6 h-6" />;
+    case 'Recreación deportiva': return <Trophy className="w-6 h-6" />;
+    case 'Primeros auxilios': return <HeartPulse className="w-6 h-6" />;
+    case 'Seguridad en eventos': return <ShieldCheck className="w-6 h-6" />;
+    case 'Trabajo comunitario': return <Users className="w-6 h-6" />;
+    default: return <Star className="w-6 h-6" />;
+  }
+};
+
 const QUESTION_STEPS = [
   { id: 'welcome', title: '🚀 Oportunidades para ti' },
   { id: 'source', title: '¿Cómo te enteraste de este espacio?', fields: ['registration_source', 'other_registration_source'], icon: Megaphone },
@@ -180,6 +202,8 @@ export default function CharacterizationForm() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showOrgInfo, setShowOrgInfo] = useState(false);
+  const [hasScrolledTalents, setHasScrolledTalents] = useState(false);
+  const [hasScrolledStudyArea, setHasScrolledStudyArea] = useState(false);
   const navigate = useNavigate();
 
   const { control, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm<FormValues>({
@@ -406,7 +430,7 @@ export default function CharacterizationForm() {
         <button onClick={() => navigate('/')} className="p-2 opacity-40 hover:opacity-100 transition-opacity">
           <X className="w-6 h-6" />
         </button>
-        <div className="flex-1 flex flex-col gap-1 pr-12">
+        <div className="flex-1 flex flex-col gap-1">
           <div className="w-full h-3 bg-foreground/5 rounded-full overflow-hidden relative">
             <motion.div 
               initial={{ width: 0 }}
@@ -420,9 +444,22 @@ export default function CharacterizationForm() {
             {Math.round(progress)}%
           </div>
         </div>
+        <ThemeToggle />
       </header>
 
-      <main className="flex-1 relative flex flex-col items-center justify-start pt-12 md:pt-20 p-6 pb-32 overflow-y-auto">
+      <main 
+        className="flex-1 relative flex flex-col items-center justify-start pt-12 md:pt-20 p-6 pb-32 overflow-y-auto"
+        onScroll={(e) => {
+          if (e.currentTarget.scrollTop > 20) {
+            if (currentStep.id === 'study_area' && !hasScrolledStudyArea) {
+              setHasScrolledStudyArea(true);
+            }
+            if (currentStep.id === 'talents' && !hasScrolledTalents) {
+              setHasScrolledTalents(true);
+            }
+          }
+        }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             id="step-container"
@@ -486,7 +523,7 @@ export default function CharacterizationForm() {
             </div>
 
             <div className="space-y-4">
-              {renderStepFields(currentStep.id, { control, errors, setValue, watch, age, isSubmitting })}
+              {renderStepFields(currentStep.id, { control, errors, setValue, watch, age, isSubmitting, hasScrolledTalents, setHasScrolledTalents, hasScrolledStudyArea, setHasScrolledStudyArea })}
             </div>
           </motion.div>
         </AnimatePresence>
@@ -516,7 +553,7 @@ export default function CharacterizationForm() {
   );
 }
 
-function renderStepFields(id: string, { control, errors, setValue, watch, age, isSubmitting }: any) {
+function renderStepFields(id: string, { control, errors, setValue, watch, age, isSubmitting, hasScrolledTalents, setHasScrolledTalents, hasScrolledStudyArea, setHasScrolledStudyArea }: any) {
   const inputClass = "h-16 bg-foreground/5 border-foreground/30 dark:border-foreground/10 rounded-2xl px-6 text-lg font-bold placeholder:text-foreground/40 dark:placeholder:text-foreground/30 focus:bg-foreground/10 transition-all focus:ring-4 focus:ring-primary/20";
   
   switch (id) {
@@ -990,7 +1027,14 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
       );
     case 'talents':
       return (
-        <div className="space-y-6 animate-fade-in relative z-10 w-full max-h-[50vh] overflow-y-auto no-scrollbar pb-10">
+        <div 
+          className="space-y-6 animate-fade-in relative z-10 w-full max-h-[60vh] overflow-y-auto no-scrollbar pb-10"
+          onScroll={(e) => {
+            if (e.currentTarget.scrollTop > 20) {
+              setHasScrolledTalents(true);
+            }
+          }}
+        >
            <div className="text-center mb-6 space-y-2">
              <p className="text-[15px] sm:text-base font-bold text-foreground/90 leading-snug px-2">
                ¿Con qué talentos o habilidades podrías apoyar al Partido MIRA?
@@ -999,25 +1043,45 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
            
            <div className="space-y-6">
              {TALENTS_CATEGORIES.map(category => (
-               <div key={category.category} className="space-y-3 flex flex-col items-start w-full">
+               <div key={category.category} className="space-y-5 flex flex-col items-start w-full">
                  <h4 className="text-[10px] text-left uppercase font-black tracking-widest opacity-50 px-2">{category.category}</h4>
-                 <div className="grid grid-cols-2 gap-2 px-1 w-full">
+                 <div className="flex overflow-x-auto w-full gap-4 px-2 pb-4 snap-x no-scrollbar">
                    {category.options.map(opt => {
                      const isSelected = watch('talents')?.includes(opt);
                      return (
-                       <SelectableCard 
-                         key={opt} 
-                         label={opt} 
-                         active={isSelected} 
+                       <div 
+                         key={opt}
+                         className="flex flex-col items-center gap-3 snap-start min-w-[76px] cursor-pointer group"
                          onClick={() => {
                            const current = watch('talents') || [];
                            setValue('talents', 
                              isSelected 
-                               ? current.filter(i => i !== opt)
+                               ? current.filter(i => i !== opt) 
                                : [...current, opt]
                            );
-                         }} 
-                       />
+                         }}
+                       >
+                         <div className={`w-[70px] h-[70px] rounded-full flex items-center justify-center transition-all duration-300 relative ${
+                           isSelected 
+                             ? 'bg-primary text-white shadow-[0_0_20px_rgba(var(--primary),0.5)] scale-110 border-2 border-primary' 
+                             : 'bg-foreground/5 text-foreground/50 border-2 border-transparent hover:bg-foreground/10 hover:text-foreground/80 hover:scale-105'
+                         }`}>
+                           {isSelected && (
+                             <div className="absolute inset-0 bg-primary/20 blur-md rounded-full -z-10" />
+                           )}
+                           {getTalentIcon(opt)}
+                           {isSelected && (
+                             <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5 shadow-sm">
+                               <CheckCircle2 className="w-5 h-5 text-primary fill-primary/10" />
+                             </div>
+                           )}
+                         </div>
+                         <span className={`text-[10px] leading-[1.2] text-center font-bold px-1 transition-colors ${
+                           isSelected ? 'text-primary' : 'text-foreground/60 group-hover:text-foreground/90'
+                         }`}>
+                           {opt}
+                         </span>
+                       </div>
                      );
                    })}
                  </div>
@@ -1036,6 +1100,25 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
                )} />
              </div>
            </div>
+
+           <AnimatePresence>
+             {!hasScrolledTalents && (
+               <motion.div 
+                 key="scroll-indicator"
+                 initial={{ opacity: 0, y: 10 }}
+                 animate={{ opacity: 1, y: 0 }}
+                 exit={{ opacity: 0, y: 10 }}
+                 className="sticky bottom-4 left-0 w-full flex flex-col items-center justify-end pb-4 pt-10 pointer-events-none z-50"
+               >
+                 <div className="flex flex-col items-center gap-1 text-primary animate-bounce">
+                   <span className="text-[10px] font-black tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full backdrop-blur-sm border border-primary/20">
+                     Desliza hacia abajo
+                   </span>
+                   <ChevronsDown className="w-5 h-5 opacity-80" />
+                 </div>
+               </motion.div>
+             )}
+           </AnimatePresence>
         </div>
       );
     case 'education':
@@ -1054,27 +1137,34 @@ function renderStepFields(id: string, { control, errors, setValue, watch, age, i
     case 'study_area':
       const hasOtherStudyArea = watch('study_area')?.includes('Otra');
       return (
-        <div className="space-y-4 max-h-[50vh] overflow-y-auto no-scrollbar pb-10 px-1">
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-6 overflow-y-auto no-scrollbar pb-32 px-1 relative -mt-6">
+          <div className="flex flex-wrap justify-center gap-2.5">
             {STUDY_AREAS.map(a => {
               const isSelected = watch('study_area')?.includes(a);
               return (
-                <SelectableCard 
-                  key={a} 
-                  label={a} 
-                  active={isSelected} 
+                <button
+                  key={a}
+                  type="button"
                   onClick={() => {
                     const current = watch('study_area') || [];
                     setValue('study_area', 
                       isSelected 
-                        ? current.filter(i => i !== a)
+                        ? current.filter((i: string) => i !== a)
                         : [...current, a]
                     );
                     if (isSelected && a === 'Otra') {
                       setValue('other_study_area', '');
                     }
-                  }} 
-                />
+                  }}
+                  className={`
+                    px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 border
+                    ${isSelected 
+                      ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25 scale-[1.02]' 
+                      : 'bg-foreground/5 text-foreground/70 border-transparent hover:bg-foreground/10 hover:border-foreground/10'}
+                  `}
+                >
+                  {a}
+                </button>
               );
             })}
           </div>
