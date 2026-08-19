@@ -14,7 +14,7 @@ const BackgroundAurora = () => (
         rotate: [0, 5, 0]
       }}
       transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      className="absolute -top-[10%] -left-[10%] w-[80%] h-[80%] bg-primary/10 rounded-full blur-[120px]" 
+      className="absolute -top-[10%] -left-[10%] w-[80%] h-[80%] bg-primary/10 rounded-full blur-[120px] transition-colors duration-300 will-change-transform" 
     />
     <motion.div 
       animate={{ 
@@ -23,9 +23,9 @@ const BackgroundAurora = () => (
         x: [0, -20, 0]
       }}
       transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-      className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[70%] bg-blue-500/5 rounded-full blur-[100px]" 
+      className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[70%] bg-blue-500/5 rounded-full blur-[100px] transition-colors duration-300 will-change-transform" 
     />
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary),transparent)] opacity-[0.02]" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--color-primary),transparent)] opacity-[0.02] transition-colors duration-300" />
     
     {/* Subtle floating particles */}
     <div className="absolute inset-0">
@@ -86,10 +86,10 @@ export default function LandingPage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5, duration: 1 }}
-              className="inline-flex items-center space-x-2 bg-primary/5 dark:bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full mb-4 shadow-sm backdrop-blur-sm"
+              className="inline-flex items-center space-x-2 bg-primary/5 dark:bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full mb-4 shadow-sm backdrop-blur-sm transition-colors duration-300"
             >
-              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-              <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary">Caracterización</span>
+              <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse transition-colors duration-300" />
+              <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-primary transition-colors duration-300">Caracterización</span>
             </motion.div>
             
             <h1 className="font-black tracking-tighter uppercase flex flex-col items-center w-full">
@@ -97,7 +97,7 @@ export default function LandingPage() {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 1.2, delay: 0.1 }}
-                className="text-[min(15vw,90px)] sm:text-7xl md:text-8xl lg:text-[110px] leading-[0.85] text-primary whitespace-nowrap"
+                className="text-[min(15vw,90px)] sm:text-7xl md:text-8xl lg:text-[110px] leading-[0.85] text-primary whitespace-nowrap transition-colors duration-300"
               >
                 ¡MIRA VÉ!
               </motion.span>
@@ -105,7 +105,7 @@ export default function LandingPage() {
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 1.2, delay: 0.3 }}
-                className="text-[min(9vw,45px)] sm:text-4xl md:text-5xl lg:text-[54px] leading-[0.9] text-muted-foreground/90 italic whitespace-nowrap mt-1 md:mt-2"
+                className="text-[min(9vw,45px)] sm:text-4xl md:text-5xl lg:text-[54px] leading-[0.9] text-muted-foreground/90 italic whitespace-nowrap mt-1 md:mt-2 transition-colors duration-300"
               >
                 JUVENTUDES CALI
               </motion.span>
