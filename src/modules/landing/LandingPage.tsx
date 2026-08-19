@@ -59,7 +59,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col min-h-screen bg-background relative selection:bg-primary selection:text-white transition-colors duration-500">
+    <div className="flex flex-col min-h-screen bg-background relative selection:bg-primary selection:text-white transition-colors duration-300">
       <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>

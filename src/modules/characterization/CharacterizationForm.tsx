@@ -1596,7 +1596,7 @@ function SelectablePill({ label, active, onClick }: SelectableCardProps) {
 
 function SuccessScreen({ onExit }: { onExit: () => void }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-background relative overflow-hidden transition-colors duration-500">
+    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-background relative overflow-hidden transition-colors duration-300">
        {/* Background Ambience */}
       <div className="absolute inset-0 pointer-events-none -z-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/5 rounded-full blur-[120px]" />
